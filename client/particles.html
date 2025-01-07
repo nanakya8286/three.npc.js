@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Particle System</title>
+    <style>
+        body { margin: 0; overflow: hidden; }
+        canvas { display: block; }
+    </style>
+</head>
+<body>
+    <script type="module">
+
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        import System from 'three-nebula';
+        import Nebula, { SpriteRenderer } from "three-nebula";
+        import json from './assets/Untitled.json';
+
+        console.log(json);
+
+
+        const threeScene = new THREE.Scene();
+
+        const renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.z = 100;
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+
+        // add a bunch of ranodmly placed cubes
+        for (let i = 0; i < 100; i++) {
+            const geometry = new THREE.BoxGeometry();
+            const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+            const cube = new THREE.Mesh(geometry, material);
+            cube.position.set(Math.random() * 200 - 100, Math.random() * 200 - 100, Math.random() * 200 - 100);
+            threeScene.add(cube);
+        }
+
+        
+        Nebula.fromJSONAsync(json, THREE).then(loaded => {
+            const nebulaRenderer = new SpriteRenderer(threeScene, THREE);
+            const nebula =window.nebula = loaded.addRenderer(nebulaRenderer);
+
+            render();
+        });
+
+
+
+        // render loop
+        const render = () => {
+            controls.update();
+            nebula.update();
+            renderer.render(threeScene, camera);
+            requestAnimationFrame(render);
+        };
+        //render();
+    </script>
+</body>
+</html>
