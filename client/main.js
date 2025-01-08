@@ -30,6 +30,8 @@ const lighting = new Lighting(scene);
 const fireflies = new Fireflies(scene, 100);
 var grass;
 
+window.touchingNPC = false;
+
 scene.userData.NPCs = [];
 
 const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -110,9 +112,9 @@ document.addEventListener('keyup', (event) => {
         return;
     }
     keyStates[event.code] = false;
-    if (event.code === 'KeyE') {
+    if (event.code === 'KeyE' && window.touchingNPC) {
         document.exitPointerLock();
-        window.npc.interact();
+        window.touchingNPC.interact();
     }
     if (event.code === 'KeyN') {
         npcPlacer.startPlacingNPC();
@@ -234,10 +236,15 @@ loader.load(mapglb, (gltf) => {
         const allowList = ['Retopo_Icosphere', 'Retopo_Icosphere001', 'Cube027', 'Cube028'];
         const octreeObjects = gltf.scene.children.filter(child => allowList.includes(child.name));
         for (let i = 0; i < octreeObjects.length; i++) {
+            if(octreeObjects[i].name === 'Retopo_Icosphere001')
+                octreeObjects[i].position.y -= 0.5;
             worldOctree.fromGraphNode(octreeObjects[i]);
+            if(octreeObjects[i].name === 'Retopo_Icosphere001')
+                octreeObjects[i].position.y += 0.5;
         }
-        grass = new Grass(scene, 20000, gltf.scene.getObjectByName('Retopo_Icosphere'));
+        //grass = new Grass(scene, 20000, gltf.scene.getObjectByName('Retopo_Icosphere'));
         const rectIsphere001 = gltf.scene.getObjectByName('Retopo_Icosphere001');
+
         const worldPosition = new THREE.Vector3();
         const worldQuaternion = new THREE.Quaternion();
         const worldScale = new THREE.Vector3();
@@ -261,6 +268,7 @@ loader.load(mapglb, (gltf) => {
                 fog: scene.fog !== undefined
             }
         );
+
         water.position.copy(worldPosition);
         scene.add(water);
     }
@@ -344,6 +352,7 @@ function animate() {
     for (let i = 0; i < scene.userData.NPCs.length; i++) {
         scene.userData.NPCs[i].interactive = false;
         if (playerMesh.position.distanceTo(scene.userData.NPCs[i].character.position) < 5) {
+            window.touchingNPC = scene.userData.NPCs[i];
             chatHint.style.display = 'block';
             scene.userData.NPCs[i].interactive = true;
             break;

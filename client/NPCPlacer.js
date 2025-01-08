@@ -73,22 +73,26 @@ class NPCPlacer {
             alert('Please fill in all required fields.');
             return;
         }
+        const that = this;
 
-        this.npcClass.createNPC().then((apiResponse) => {
-            const npc = new NPC('./models/robot-idle.glb', [], id, name, bio, knowledge, lore, (npc) => {
-                npc.character.scale.set(0.5, 0.5, 0.5);
-                npc.character.children[0].children[0].children[1].children[3].material.color.set(0xff0000);
-                npc.switchAnimation('idle');
-                window.npcNameTag = createTextSprite(name, { fontsize: 48 });
-                window.npcNameTag.position.y = 3;
-                npc.character.add(window.npcNameTag);
-                npc.character.position.copy(this.validIntersect);
-                this.scene.add(npc.character);
-                this.stopPlacingNPC();
-                this.spawningNPC = false;
+        const npc = new NPC('./models/robot-idle.glb', [], id, name, bio, knowledge, lore, (npc) => {
+            npc.character.scale.set(0.5, 0.5, 0.5);
+            npc.character.children[0].children[0].children[1].children[3].material.color.set(0xff0000);
+            npc.switchAnimation('idle');
+            window.npcNameTag = createTextSprite(name, { fontsize: 48 });
+            window.npcNameTag.position.y = 3;
+            npc.character.add(window.npcNameTag);
+            npc.character.position.copy(that.validIntersect);
+            that.scene.add(npc.character);
+            that.stopPlacingNPC();
+            npc.createNPC().then((apiResponse) => {
+            
+                that.scene.userData.NPCs.push(npc);
             });
-            this.scene.userData.NPCs.push(npc);
+            that.spawningNPC = false;
         });
+
+        
 
         this.npcCreationModal.style.display = 'none';
     }

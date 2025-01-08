@@ -20,7 +20,8 @@
     "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.1",
     "three": "^0.171.0",
-    "three-nebula": "^10.0.3"
+    "three-nebula": "^10.0.3",
+    "three-spritetext": "^1.9.3"
   },
   "devDependencies": {
     "vite": "^6.0.3"
