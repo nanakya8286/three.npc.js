@@ -73,6 +73,14 @@ class Character {
             console.warn(`Animation ${animationName} not found`);
         }
     }
+    renameAnimation(animationName, newName) {
+        if (this.animations[animationName]) {
+            this.animations[newName] = this.animations[animationName];
+            delete this.animations[animationName];
+        } else {
+            console.warn(`Animation ${animationName} not found`);
+        }
+    }
     removeFirstFrame(clip) {
         console.log('removing first frame');
         window.removedFirstFrame = clip;

@@ -225,7 +225,7 @@ const loader = new GLTFLoader().setPath('./models/');
 var npcPlacer;
 const USE_NEW_MAP = true;
 const mapglb = USE_NEW_MAP ? 'Game Map Baked.glb' : 'untitled.glb';
-var water;
+var water, waterMaterial;
 loader.load(mapglb, (gltf) => {
     gltf.scene.position.z = 15;
     scene.add(gltf.scene);
@@ -242,35 +242,47 @@ loader.load(mapglb, (gltf) => {
             if(octreeObjects[i].name === 'Retopo_Icosphere001')
                 octreeObjects[i].position.y += 0.5;
         }
+        // remove all shininess from the material of gltf.scene.getObjectByName('Retopo_Icosphere'), make sure it does not catch light
+        var material = gltf.scene.getObjectByName('Retopo_Icosphere').material;
+        // material.shininess = 0;
+        // material.specular = new THREE.Color(0x000000);
+        // medium dark green
+        gltf.scene.getObjectByName('Retopo_Icosphere').material = new THREE.MeshBasicMaterial({ color:0x003300,map:material.map });
+
         //grass = new Grass(scene, 20000, gltf.scene.getObjectByName('Retopo_Icosphere'));
         const rectIsphere001 = gltf.scene.getObjectByName('Retopo_Icosphere001');
+        waterMaterial = window.waterMaterial= rectIsphere001.material;
+        // set normals
+        waterMaterial.normalMap = new THREE.TextureLoader().load('./models/waternormals.jpg', function (texture) {
+            texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+        });
 
-        const worldPosition = new THREE.Vector3();
-        const worldQuaternion = new THREE.Quaternion();
-        const worldScale = new THREE.Vector3();
-        rectIsphere001.getWorldPosition(worldPosition);
-        rectIsphere001.getWorldQuaternion(worldQuaternion);
-        rectIsphere001.getWorldScale(worldScale);
-        gltf.scene.remove(rectIsphere001);
-        const waterGeometry = rectIsphere001.geometry.clone();
-        water = window.water = new Water(
-            waterGeometry,
-            {
-                textureWidth: 512,
-                textureHeight: 512,
-                waterNormals: new THREE.TextureLoader().load('./models/waternormals.jpg', function (texture) {
-                    texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
-                }),
-                sunDirection: new THREE.Vector3(),
-                sunColor: 0xffffff,
-                waterColor: 0x001e0f,
-                distortionScale: 3.7,
-                fog: scene.fog !== undefined
-            }
-        );
+        // const worldPosition = new THREE.Vector3();
+        // const worldQuaternion = new THREE.Quaternion();
+        // const worldScale = new THREE.Vector3();
+        // rectIsphere001.getWorldPosition(worldPosition);
+        // rectIsphere001.getWorldQuaternion(worldQuaternion);
+        // rectIsphere001.getWorldScale(worldScale);
+        // gltf.scene.remove(rectIsphere001);
+        // const waterGeometry = rectIsphere001.geometry.clone();
+        // water = window.water = new Water(
+        //     waterGeometry,
+        //     {
+        //         textureWidth: 512,
+        //         textureHeight: 512,
+        //         waterNormals: new THREE.TextureLoader().load('./models/waternormals.jpg', function (texture) {
+        //             texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+        //         }),
+        //         sunDirection: new THREE.Vector3(),
+        //         sunColor: 0xffffff,
+        //         waterColor: 0x001e0f,
+        //         distortionScale: 3.7,
+        //         fog: scene.fog !== undefined
+        //     }
+        // );
 
-        water.position.copy(worldPosition);
-        scene.add(water);
+        // water.position.copy(worldPosition);
+        // scene.add(water);
     }
     gltf.scene.traverse(child => {
         if (child.isMesh) {
@@ -299,13 +311,41 @@ document.getElementById('playButton').addEventListener('click', () => {
     window.playing = true;
 });
 
-window.exampleCharacter = new Character('./models/robot-idle.glb', [
-    './models/run.glb',
-    './models/jump.glb',
-    './models/falling.glb',
-]);
+// window.exampleCharacter = new Character('./models/robot-idle.glb', [
+//     './models/run.glb',
+//     './models/jump.glb',
+//     './models/falling.glb',
+// ]);
+window.exampleCharacter = new Character('./models/PLAYER/Blond Hair/Male/Blond Male idle.glb', [
+    './models/PLAYER/Blond Hair/Male/Blond Male jump.glb',
+    './models/PLAYER/Blond Hair/Male/Blond Male walk.glb',
+], (character) => {
+    character.character.children[0].children[0].position.set(0, 10, 0);
+    character.character.children[0].children[0].rotation.set(0, 0, 0);
+    character.renameAnimation('metarigAction.007', 'run');
+    character.renameAnimation('metarig.001Action.013', 'jump');
+    character.renameAnimation('metarig.002Action.011', 'idle');
+    // remove first frame of the animations
+    for (let animationName in character.animations) {
+        character.removeFirstFrame(character.animations[animationName]);
+    }
+    // set all materials to meshbasic
+    // character.character.traverse((child) => {
+        
+    //     if (child.isMesh) {
+    //         child.material = new THREE.MeshBasicMaterial({ color: 0xffffff, map: child.material.map });
+    //     }
+    // });
+});
 exampleCharacter.character.position.y = -1;
-exampleCharacter.character.scale.set(0.5, 0.5, 0.5);
+exampleCharacter.character.scale.set(0.05, 0.05, 0.05);
+// add a dim light to the player mesh, that does not effect the player
+const playerLight = window.playerLight = new THREE.PointLight(0xffffff, 0.25, 100);
+playerLight.position.set(0, -0.25, 0);
+//playerLight.add(new THREE.Mesh(new THREE.SphereGeometry(0.1), new THREE.MeshBasicMaterial({ color: 0xffffff })));
+playerMesh.add(playerLight);
+// stop
+
 playerMesh.add(exampleCharacter.character);
 
 window.createTextSprite = createTextSprite;
@@ -407,6 +447,14 @@ function animate() {
     }
     network.update(deltaTime * STEPS_PER_FRAME);
     fireflies.update(deltaTime * STEPS_PER_FRAME);
+    if(waterMaterial){
+        // move normals left
+        // waterMaterial.map.offset.x += 0.01 * deltaTime * STEPS_PER_FRAME; // Horizontal flow speed
+        // waterMaterial.map.offset.y += 0.01 * deltaTime * STEPS_PER_FRAME; // Vertical flow speed
+        waterMaterial.normalMap.offset.x += 0.01 * deltaTime * STEPS_PER_FRAME; // Horizontal flow speed
+        waterMaterial.normalMap.offset.y -= 0.01 * deltaTime * STEPS_PER_FRAME; // Vertical flow speed
+        
+    }
     if (grass)
         grass.update(deltaTime * STEPS_PER_FRAME);
     renderer.render(scene, camera);
